@@ -7,18 +7,22 @@ import { DatabaseModule } from '../database/database.module.js';
 import { AuthAttemptService } from './auth-attempt.service.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
+import { CliTokensController } from './cli-tokens.controller.js';
+import { CliTokensService } from './cli-tokens.service.js';
 import { AuthAttempt } from './entities/auth-attempt.entity.js';
 import { AuthSession } from './entities/auth-session.entity.js';
+import { CliToken } from './entities/cli-token.entity.js';
 import { User } from './entities/user.entity.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import { AuthAttemptRepository } from './repositories/auth-attempt.repository.js';
 import { AuthSessionRepository } from './repositories/auth-session.repository.js';
+import { CliTokenRepository } from './repositories/cli-token.repository.js';
 import { UserRepository } from './repositories/user.repository.js';
 
 @Module({
   imports: [
     DatabaseModule,
-    TypeOrmModule.forFeature([User, AuthSession, AuthAttempt]),
+    TypeOrmModule.forFeature([User, AuthSession, AuthAttempt, CliToken]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -27,13 +31,15 @@ import { UserRepository } from './repositories/user.repository.js';
       }),
     }),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, CliTokensController],
   providers: [
     AuthService,
     AuthAttemptService,
+    CliTokensService,
     UserRepository,
     AuthSessionRepository,
     AuthAttemptRepository,
+    CliTokenRepository,
     JwtAuthGuard,
     {
       provide: ACCESS_TOKEN_VERIFIER,

@@ -1,14 +1,16 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AuthSession } from '../src/auth/entities/auth-session.entity.js';
+import { CliToken } from '../src/auth/entities/cli-token.entity.js';
 import { User } from '../src/auth/entities/user.entity.js';
 import { AuthSessionRepository } from '../src/auth/repositories/auth-session.repository.js';
+import { CliTokenRepository } from '../src/auth/repositories/cli-token.repository.js';
 import { createTestDatabase, TestDatabase } from './database.js';
 
 describe('auth secret storage', () => {
   let database: TestDatabase;
 
   beforeAll(async () => {
-    database = await createTestDatabase([User, AuthSession]);
+    database = await createTestDatabase([User, AuthSession, CliToken]);
   });
 
   afterAll(async () => {
@@ -53,5 +55,39 @@ describe('auth secret storage', () => {
 
     const loaded = await sessions.findById(created.id);
     expect(loaded?.refreshTokenHash).toBe(refreshTokenHash);
+  });
+
+  it('stores only a CLI token hash and excludes it from default selects', async () => {
+    const users = database.dataSource.getRepository(User);
+    const user = await users.save(
+      users.create({
+        email: 'cli-hash-only@example.com',
+        passwordHash: 'bcrypt-hash',
+      }),
+    );
+    const tokens = new CliTokenRepository(
+      database.dataSource.getRepository(CliToken),
+    );
+    const tokenHash = 'b'.repeat(64);
+
+    const created = await tokens.create({
+      userId: user.id,
+      name: 'laptop',
+      tokenHash,
+    });
+
+    const raw = await database.dataSource.query<Array<{ token_hash: string }>>(
+      'SELECT token_hash FROM cli_tokens WHERE id = $1',
+      [created.id],
+    );
+    expect(raw[0]?.token_hash).toBe(tokenHash);
+
+    const defaultLoaded = await database.dataSource
+      .getRepository(CliToken)
+      .findOneBy({ id: created.id });
+    expect(defaultLoaded?.tokenHash).toBeUndefined();
+
+    const loaded = await tokens.findByIdForUser(created.id, user.id);
+    expect(loaded?.tokenHash).toBeUndefined();
   });
 });

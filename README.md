@@ -89,6 +89,10 @@ before merge; that setting lives in GitHub, not in this repository.
 - `POST /api/v1/auth/refresh` — rotates both cookies.
 - `POST /api/v1/auth/logout` — revokes the session and clears both cookies;
   works with only a valid refresh cookie, even after the access token expires.
+- `POST /api/v1/auth/cli-tokens` — creates a named CLI token; returns the raw
+  `hl_cli_...` token once.
+- `DELETE /api/v1/auth/cli-tokens/:id` — revokes a CLI token; cross-user access
+  returns `404` and repeated revokes return `204`.
 
 Login is limited per HMAC(email) and per IP over a 15-minute window. The
 defaults are 5 email failures and 30 IP attempts; exceeding either returns
