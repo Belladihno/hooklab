@@ -7,9 +7,15 @@ changing code. The engineering playbook is the review contract.
 
 1. Write or update the failing test first.
 2. Implement the smallest change that passes.
-3. Run the focused test, then `pnpm run check`.
-4. Update `docs/WORKLOG.md` with what changed and what is next.
-5. Record any deviation in `docs/implementation-notes.md`.
+3. Commit normally; the Husky pre-commit hook runs lint-staged, a staged-file
+   typecheck, `check:no-todo`, and `check:no-only`.
+4. Before handoff, run the focused test, then `pnpm run check`.
+5. Update `docs/WORKLOG.md` with what changed and what is next.
+6. Record any deviation in `docs/implementation-notes.md`.
+
+CI repeats the full gates, adds e2e, migration up/down, schema drift, dependency
+audit, and a Gitleaks scan. A pull request is mergeable only when `quality`,
+`test`, `e2e`, `migrations`, and `security` pass.
 
 ## Rules that reject a change
 
@@ -19,7 +25,7 @@ changing code. The engineering playbook is the review contract.
 - `synchronize: true`, `eager: true`, or `@InjectRepository` outside a
   repository.
 - `any`, `@ts-ignore`, or a TODO comment.
-- A skipped, weakened, or deleted test.
+- A focused test (`.only`) or a skipped, weakened, or deleted test.
 - A secret, raw endpoint key, token, or password in a log or response.
 - A schema change without a migration and schema-drift verification.
 
@@ -32,7 +38,9 @@ pnpm run typecheck
 pnpm run lint
 pnpm run check:access
 pnpm run check:no-todo
+pnpm run check:no-only
 pnpm run format:check
+pnpm run typecheck:staged
 pnpm run build
 pnpm audit --audit-level high
 ```

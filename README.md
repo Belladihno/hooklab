@@ -46,7 +46,9 @@ pnpm run lint             # oxlint
 pnpm run typecheck        # tsc --noEmit
 pnpm run check:access     # every route declares Public/SignedIn
 pnpm run check:no-todo    # no TODO/FIXME tags in src or test
+pnpm run check:no-only    # no focused tests in src or test
 pnpm run format:check     # Prettier check
+pnpm run typecheck:staged # typecheck only staged TypeScript files
 pnpm run check            # typecheck, lint, checks, format, tests, e2e, build
 pnpm audit                # dependency vulnerability check
 pnpm test                 # unit + integration (needs .env.test)
@@ -55,6 +57,29 @@ pnpm run migration:run
 pnpm run migration:generate -- src/database/migrations/<Name>
 pnpm run migration:revert
 ```
+
+## Hooks and CI
+
+`pnpm install` installs Husky. The pre-commit hook runs `lint-staged`
+(`oxlint --fix` and `prettier --write` on staged TypeScript), a staged-file
+typecheck, and the no-TODO/no-focused-test checks. It does not run the full
+suite; run `pnpm run check` before handing work off.
+
+`.github/workflows/ci.yml` runs five jobs on every pull request and on `main`:
+
+| Job          | Verifies                                                                            |
+| ------------ | ----------------------------------------------------------------------------------- |
+| `quality`    | Prettier, oxlint, full `tsc`, access declarations, no TODO, no `.only`, build       |
+| `test`       | Unit and integration tests with coverage against an ephemeral PostgreSQL 17 service |
+| `e2e`        | Full HTTP suite against an ephemeral PostgreSQL 17 service                          |
+| `migrations` | `migration:run`, `migration:revert`, re-apply, migration up/down, and schema drift  |
+| `security`   | `pnpm audit --audit-level high` and a Gitleaks history scan                         |
+
+CI sets `TEST_DATABASE_URL` explicitly and never falls back to a shared
+database. Coverage is uploaded as an artifact; there is no changed-line coverage
+threshold yet. Container image scanning is not wired because the repository does
+not build an image yet. Enable branch protection and require the five checks
+before merge; that setting lives in GitHub, not in this repository.
 
 ## Auth
 
@@ -112,20 +137,20 @@ docs/                  spec, plan, todo, worklog, implementation notes
 
 ## Environment
 
-| Variable                       | Required | Default                                          |
-| ------------------------------ | -------- | ------------------------------------------------ |
-| `DATABASE_URL`                 | yes      | —                                                |
-| `DATABASE_SCHEMA`              | no       | `public`                                         |
-| `NODE_ENV`                     | no       | `development`                                    |
-| `PORT`                         | no       | `3000`                                           |
-| `LOG_LEVEL`                    | no       | `info`                                           |
-| `BCRYPT_COST_ROUNDS`           | no       | `12` (minimum `12` in production; tests use `4`) |
-| `JWT_SECRET`                   | yes      | — (at least 32 characters)                       |
-| `JWT_ACCESS_TTL_SECONDS`       | no       | `900`                                            |
-| `REFRESH_IDLE_TTL_SECONDS`     | no       | `604800`                                         |
-| `REFRESH_ABSOLUTE_TTL_SECONDS` | no       | `2592000`                                        |
-| `CSRF_ALLOWED_ORIGINS`         | no       | empty; comma-separated exact origins             |
-| `AUTH_RATE_LIMIT_WINDOW_SECONDS` | no     | `900`                                            |
-| `AUTH_IP_ATTEMPT_LIMIT`        | no       | `30`                                             |
-| `AUTH_EMAIL_FAILURE_LIMIT`     | no       | `5`                                              |
-| `TEST_DATABASE_URL`            | tests    | —                                                |
+| Variable                         | Required | Default                                          |
+| -------------------------------- | -------- | ------------------------------------------------ |
+| `DATABASE_URL`                   | yes      | —                                                |
+| `DATABASE_SCHEMA`                | no       | `public`                                         |
+| `NODE_ENV`                       | no       | `development`                                    |
+| `PORT`                           | no       | `3000`                                           |
+| `LOG_LEVEL`                      | no       | `info`                                           |
+| `BCRYPT_COST_ROUNDS`             | no       | `12` (minimum `12` in production; tests use `4`) |
+| `JWT_SECRET`                     | yes      | — (at least 32 characters)                       |
+| `JWT_ACCESS_TTL_SECONDS`         | no       | `900`                                            |
+| `REFRESH_IDLE_TTL_SECONDS`       | no       | `604800`                                         |
+| `REFRESH_ABSOLUTE_TTL_SECONDS`   | no       | `2592000`                                        |
+| `CSRF_ALLOWED_ORIGINS`           | no       | empty; comma-separated exact origins             |
+| `AUTH_RATE_LIMIT_WINDOW_SECONDS` | no       | `900`                                            |
+| `AUTH_IP_ATTEMPT_LIMIT`          | no       | `30`                                             |
+| `AUTH_EMAIL_FAILURE_LIMIT`       | no       | `5`                                              |
+| `TEST_DATABASE_URL`              | tests    | —                                                |

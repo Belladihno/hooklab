@@ -1,6 +1,6 @@
 # Constraints
 
-Last reviewed: 2026-10-30
+Last reviewed: 2026-11-01
 
 ## Floor (always enforced, no setup)
 
@@ -15,19 +15,30 @@ Last reviewed: 2026-10-30
 
 ## Enforced with numbers
 
-| Dimension        | Rule                           | Checked by                                                | Runs at  |
-| ---------------- | ------------------------------ | --------------------------------------------------------- | -------- |
-| Types            | Zero errors, full strict block | `pnpm run typecheck`                                      | edit     |
-| Lint             | Zero errors                    | `pnpm run lint`                                           | edit     |
-| Unit/integration | All pass                       | `pnpm test`                                               | task end |
-| E2E              | All pass                       | `pnpm run test:e2e`                                       | task end |
-| Migrations       | Up and down pass               | `pnpm test`                                               | CI       |
-| Schema           | No drift                       | `pnpm test`                                               | CI       |
-| Access           | Every route declares access    | `pnpm run check:access`                                   | task end |
-| Comments         | No TODO tags                   | `pnpm run check:no-todo`                                  | task end |
-| Build            | Zero errors                    | `pnpm run build`                                          | task end |
-| Format           | No diffs                       | `pnpm exec prettier --check "src/**/*.ts" "test/**/*.ts"` | task end |
-| Deps             | No high/critical               | `pnpm audit --audit-level high`                           | CI       |
+| Dimension        | Rule                           | Checked by                                                | Runs at                 |
+| ---------------- | ------------------------------ | --------------------------------------------------------- | ----------------------- |
+| Types            | Zero errors, full strict block | `pnpm run typecheck`                                      | edit                    |
+| Lint             | Zero errors                    | `pnpm run lint`                                           | edit                    |
+| Unit/integration | All pass                       | `pnpm test`                                               | task end, CI            |
+| E2E              | All pass                       | `pnpm run test:e2e`                                       | task end, CI            |
+| Migrations       | Up and down pass               | `pnpm test`                                               | CI                      |
+| Schema           | No drift                       | `pnpm test`                                               | CI                      |
+| Access           | Every route declares access    | `pnpm run check:access`                                   | task end, CI            |
+| Comments         | No TODO tags                   | `pnpm run check:no-todo`                                  | pre-commit, `check`, CI |
+| Focused tests    | No `.only`                     | `pnpm run check:no-only`                                  | pre-commit, `check`, CI |
+| Build            | Zero errors                    | `pnpm run build`                                          | task end, CI            |
+| Format           | No diffs                       | `pnpm exec prettier --check "src/**/*.ts" "test/**/*.ts"` | pre-commit, `check`, CI |
+| Deps             | No high/critical               | `pnpm audit --audit-level high`                           | CI                      |
+| Secrets          | No committed secrets           | Gitleaks history scan                                     | CI                      |
+
+## Automation
+
+| Stage      | Runs                                                                                                        |
+| ---------- | ----------------------------------------------------------------------------------------------------------- |
+| Pre-commit | `lint-staged`, staged-file `tsc`, `check:no-todo`, `check:no-only`                                          |
+| Task end   | `pnpm run check`                                                                                            |
+| CI         | Full `tsc`, lint, format, access, no-TODO, no-`.only`, tests, e2e, build, migrations, drift, audit, secrets |
+| Release    | Staging e2e, smoke journey, rollback rehearsal (not configured yet)                                         |
 
 ## Measured, not yet enforced
 
