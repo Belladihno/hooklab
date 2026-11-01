@@ -135,6 +135,19 @@ describe('cli tokens', () => {
     >('SELECT revoked_at FROM cli_tokens WHERE id = $1', [id]);
 
     expect(rows[0]?.revoked_at).not.toBeNull();
+
+    const revokedAt = rows[0]?.revoked_at;
+
+    await request(app.getHttpServer())
+      .delete(`/api/v1/auth/cli-tokens/${id}`)
+      .set('Cookie', session.cookie)
+      .expect(204);
+
+    const repeated = await testApp.database.dataSource.query<
+      { revoked_at: Date | null }[]
+    >('SELECT revoked_at FROM cli_tokens WHERE id = $1', [id]);
+
+    expect(repeated[0]?.revoked_at).toEqual(revokedAt);
   });
 
   it('returns 404 when another user tries to revoke the token', async () => {
