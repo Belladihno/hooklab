@@ -1,0 +1,8 @@
+allowBuilds:
+  bcrypt: true
+  esbuild: true
+onlyBuiltDependencies:
+  - bcrypt
+  - esbuild
+overrides:
+  multer: 2.5.0
