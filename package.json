@@ -7,10 +7,11 @@
   "license": "UNLICENSED",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=20.17"
   },
   "packageManager": "pnpm@11.9.0",
   "scripts": {
+    "prepare": "husky",
     "build": "nest build",
     "deploy": "nest deploy",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
@@ -22,8 +23,10 @@
     "lint": "oxlint src/ test/",
     "check:access": "node scripts/check-access-decorators.mjs",
     "check:no-todo": "node scripts/check-no-todo.mjs",
-    "check": "pnpm run typecheck && pnpm run lint && pnpm run check:access && pnpm run check:no-todo && pnpm run format:check && pnpm test && pnpm run test:e2e && pnpm run build",
+    "check:no-only": "node scripts/check-no-only.mjs",
+    "check": "pnpm run typecheck && pnpm run lint && pnpm run check:access && pnpm run check:no-todo && pnpm run check:no-only && pnpm run format:check && pnpm test && pnpm run test:e2e && pnpm run build",
     "typecheck": "tsc --noEmit",
+    "typecheck:staged": "node scripts/typecheck-staged.mjs",
     "test": "vitest run --config ./vitest.config.ts",
     "test:watch": "vitest --config ./vitest.config.ts",
     "test:cov": "vitest run --coverage --config ./vitest.config.ts",
@@ -66,6 +69,8 @@
     "@types/supertest": "7.2.1",
     "@vitest/coverage-v8": "4.1.12",
     "dotenv": "18.0.9",
+    "husky": "9.1.7",
+    "lint-staged": "16.4.0",
     "oxlint": "1.89.0",
     "pino-pretty": "13.2.0",
     "prettier": "3.9.10",
@@ -74,5 +79,11 @@
     "tsx": "4.23.15",
     "typescript": "6.0.3",
     "vitest": "4.1.12"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "oxlint --fix",
+      "prettier --write"
+    ]
   }
 }

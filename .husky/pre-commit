@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+set -e
+
+pnpm exec lint-staged
+pnpm run typecheck:staged
+pnpm run check:no-todo
+pnpm run check:no-only
