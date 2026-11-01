@@ -5,6 +5,33 @@ import { Project } from '../src/projects/entities/project.entity.js';
 import { uuidV7 } from '../src/database/uuid-v7.js';
 import { createTestDatabase, TestDatabase } from './database.js';
 
+async function tableExists(
+  database: TestDatabase,
+  name: string,
+): Promise<boolean> {
+  const rows = await database.dataSource.query<Array<{ name: string | null }>>(
+    'SELECT to_regclass($1) AS name',
+    [name],
+  );
+
+  return rows[0]?.name !== null;
+}
+
+async function undoUntilMissing(
+  database: TestDatabase,
+  table: string,
+): Promise<void> {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    if (!(await tableExists(database, table))) {
+      return;
+    }
+
+    await database.dataSource.undoLastMigration();
+  }
+
+  throw new Error(`Could not undo migrations until ${table} was removed`);
+}
+
 async function postgresErrorCode(
   run: () => Promise<unknown>,
 ): Promise<string | undefined> {
@@ -83,27 +110,15 @@ describe('projects migration', () => {
     const separateDatabase = await createTestDatabase();
 
     try {
-      const tableBefore = await separateDatabase.dataSource.query<
-        Array<{ name: string | null }>
-      >("SELECT to_regclass('projects') AS name");
+      expect(await tableExists(separateDatabase, 'projects')).toBe(true);
 
-      expect(tableBefore[0]?.name).not.toBeNull();
+      await undoUntilMissing(separateDatabase, 'projects');
 
-      await separateDatabase.dataSource.undoLastMigration();
-
-      const tableAfterRevert = await separateDatabase.dataSource.query<
-        Array<{ name: string | null }>
-      >("SELECT to_regclass('projects') AS name");
-
-      expect(tableAfterRevert[0]?.name).toBeNull();
+      expect(await tableExists(separateDatabase, 'projects')).toBe(false);
 
       await separateDatabase.dataSource.runMigrations();
 
-      const tableAfterReapply = await separateDatabase.dataSource.query<
-        Array<{ name: string | null }>
-      >("SELECT to_regclass('projects') AS name");
-
-      expect(tableAfterReapply[0]?.name).not.toBeNull();
+      expect(await tableExists(separateDatabase, 'projects')).toBe(true);
     } finally {
       await separateDatabase.drop();
     }

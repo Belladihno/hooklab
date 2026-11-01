@@ -16,6 +16,21 @@ async function tableExists(
   return rows[0]?.name !== null;
 }
 
+async function undoUntilMissing(
+  database: TestDatabase,
+  table: string,
+): Promise<void> {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    if (!(await tableExists(database, table))) {
+      return;
+    }
+
+    await database.dataSource.undoLastMigration();
+  }
+
+  throw new Error(`Could not undo migrations until ${table} was removed`);
+}
+
 describe('auth migrations', () => {
   let database: TestDatabase;
 
@@ -41,8 +56,7 @@ describe('auth migrations', () => {
     expect(await tableExists(database, 'auth_attempts')).toBe(true);
     expect(await tableExists(database, 'auth_sessions')).toBe(true);
 
-    await database.dataSource.undoLastMigration();
-    await database.dataSource.undoLastMigration();
+    await undoUntilMissing(database, 'auth_attempts');
 
     expect(await tableExists(database, 'auth_attempts')).toBe(false);
     expect(await tableExists(database, 'auth_sessions')).toBe(true);
@@ -50,9 +64,7 @@ describe('auth migrations', () => {
     await database.dataSource.runMigrations();
     expect(await tableExists(database, 'auth_attempts')).toBe(true);
 
-    await database.dataSource.undoLastMigration();
-    await database.dataSource.undoLastMigration();
-    await database.dataSource.undoLastMigration();
+    await undoUntilMissing(database, 'auth_sessions');
 
     expect(await tableExists(database, 'auth_sessions')).toBe(false);
     expect(await tableExists(database, 'auth_attempts')).toBe(false);
